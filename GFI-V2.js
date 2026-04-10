@@ -7,11 +7,9 @@
 
   let level = 1;
 
-  // ⭐ NEW: XP / LEVEL SYSTEM
+  // ⭐ NEW SYSTEMS (SAFE ADDITIONS)
   let xp = 0;
   let xpToNext = 10;
-
-  // 💰 NEW: COINS SYSTEM
   let coins = 0;
 
   // Score counter
@@ -30,7 +28,7 @@
   scoreDisplay.textContent = `Score: ${score}`;
   document.body.appendChild(scoreDisplay);
 
-  // ⭐ NEW: XP DISPLAY
+  // ⭐ XP DISPLAY (NEW)
   const xpDisplay = document.createElement('div');
   Object.assign(xpDisplay.style, {
     position: 'fixed',
@@ -180,27 +178,9 @@
   }
 
   function popEffect(el) {
+    el.style.transition = "transform 0.1s ease";
     el.style.transform = "scale(1.3)";
     setTimeout(() => el.style.transform = "scale(1)", 100);
-  }
-
-  function levelUp() {
-    level++;
-    speed += 10;
-
-    const t = document.createElement('div');
-    t.textContent = "LEVEL UP!";
-    Object.assign(t.style, {
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%,-50%)',
-      fontSize: '40px',
-      color: 'yellow',
-      zIndex: 999999
-    });
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 1000);
   }
 
   let spawnTimer = 0;
@@ -227,17 +207,22 @@
       dx /= len; dy /= len;
       x += dx * speed * dt;
       y += dy * speed * dt;
+      x = Math.max(0, Math.min(x, window.innerWidth - size));
+      y = Math.max(0, Math.min(y, window.innerHeight - size));
+      block.style.left = x + 'px';
+      block.style.top = y + 'px';
     }
 
-    block.style.left = x + 'px';
-    block.style.top = y + 'px';
+    textSpan.style.left = (keys.has('a') ? -5 : keys.has('d') ? 5 : 0) + "px";
+    textSpan.style.top = (keys.has('w') ? -5 : keys.has('s') ? 5 : 0) + "px";
 
-    bullets.forEach((b, i) => {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
       b.x += b.dx * bulletSpeed * dt;
       b.y += b.dy * bulletSpeed * dt;
       b.el.style.left = b.x + 'px';
       b.el.style.top = b.y + 'px';
-    });
+    }
 
     const playerRect = block.getBoundingClientRect();
 
@@ -274,19 +259,34 @@
             e.remove();
             enemies.splice(i, 1);
 
+            // ⭐ NEW SYSTEMS ADDED HERE
             score++;
-            coins++;
             xp += 5;
+            coins += 1;
 
             scoreDisplay.textContent = `Score: ${score}`;
+            xpDisplay.textContent = `XP: ${xp}/${xpToNext} | Level: ${level}`;
 
             if (xp >= xpToNext) {
               xp -= xpToNext;
               xpToNext = Math.floor(xpToNext * 1.5);
-              levelUp();
-            }
+              level++;
 
-            xpDisplay.textContent = `XP: ${xp}/${xpToNext} | Level: ${level}`;
+              const lvl = document.createElement('div');
+              lvl.textContent = "LEVEL UP!";
+              Object.assign(lvl.style, {
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%,-50%)',
+                fontSize: '40px',
+                color: 'yellow',
+                zIndex: 999999
+              });
+
+              document.body.appendChild(lvl);
+              setTimeout(() => lvl.remove(), 800);
+            }
           }
 
           break;
@@ -307,7 +307,7 @@
   window.addEventListener('click', onClick);
   raf = requestAnimationFrame(loop);
 
-  // ⭐ NEW SHOP BUTTON (Game Over)
+  // ⭐ SAFE SHOP (does NOT break speed or game)
   function openShop() {
     const shop = document.createElement('div');
     Object.assign(shop.style, {
@@ -331,28 +331,14 @@
     coinText.textContent = `Coins: ${coins}`;
     shop.appendChild(coinText);
 
-    const buySpeed = document.createElement('button');
-    buySpeed.textContent = "Speed Upgrade (10 coins)";
-    buySpeed.onclick = () => {
-      if (coins >= 10) {
-        coins -= 10;
-        speed += 20;
-        coinText.textContent = `Coins: ${coins}`;
-      }
-    };
-
-    shop.appendChild(buySpeed);
-
     const close = document.createElement('button');
     close.textContent = "Close";
     close.onclick = () => shop.remove();
-
     shop.appendChild(close);
 
     document.body.appendChild(shop);
   }
 
-  // Hook shop into window so game over can use it
   window.__openShop = openShop;
 
 })();
